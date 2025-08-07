@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # 暴露容器端口
-EXPOSE 5000
+EXPOSE 5001
 
 # 启动 Flask 应用
 CMD ["python", "app.py"]
