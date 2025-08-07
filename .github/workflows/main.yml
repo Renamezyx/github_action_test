@@ -1,21 +1,39 @@
-name: GitHub Actions 演示
-run-name: ${{ github.actor }} 正在测试 GitHub Actions 🚀
+name: 使用 Dockerfile 在远程服务器构建并部署 Flask
 
-on: [push]
+on:
+  push:
+    branches: [main]
 
 jobs:
-  explore-github-actions:  # ✅ job ID 必须为合法标识符（英文/数字/下划线/连字符）
-    name: 探索 GitHub Actions
+  deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - run: echo "🎉 此任务是由 ${{ github.event_name }} 事件自动触发的。"
-      - run: echo "🐧 当前任务正在 GitHub 托管的 ${{ runner.os }} 系统上运行。"
-      - run: echo "🔎 当前分支是 ${{ github.ref }}，仓库是 ${{ github.repository }}。"
-      - name: 检出仓库代码
-        uses: actions/checkout@v4
-      - run: echo "💡 仓库 ${{ github.repository }} 的代码已克隆到运行器。"
-      - run: echo "🖥️ 工作流程现在已准备好在运行器上测试你的代码。"
-      - name: 列出仓库文件
+      - name: 拉取代码
+        uses: actions/checkout@v3
+
+      - name: 写入 SSH 私钥
         run: |
-          ls ${{ github.workspace }}
-      - run: echo "🍏 当前任务的状态是 ${{ job.status }}。"
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: 将代码传输到远程服务器
+        run: |
+          rsync -avz -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.TARGET_DIR }}
+
+      - name: 在远程服务器上构建并运行 Docker
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd ${{ secrets.TARGET_DIR }}
+            # 停止并删除旧容器（若存在）
+            docker stop flask-app || true
+            docker rm flask-app || true
+            # 按 Dockerfile 构建镜像，命名 flask-app
+            docker build -t flask-app .
+            # 启动容器，后台运行，映射5000端口
+            docker run -d -p 5000:5000 --name flask-app flask-app
