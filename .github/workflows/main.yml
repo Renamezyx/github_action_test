@@ -4,7 +4,8 @@ run-name: ${{ github.actor }} 正在测试 GitHub Actions 🚀
 on: [push]
 
 jobs:
-  探索-GitHub-Actions:
+  explore-github-actions:  # ✅ job ID 必须为合法标识符（英文/数字/下划线/连字符）
+    name: 探索 GitHub Actions
     runs-on: ubuntu-latest
     steps:
       - run: echo "🎉 此任务是由 ${{ github.event_name }} 事件自动触发的。"
