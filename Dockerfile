@@ -15,4 +15,4 @@ COPY . .
 EXPOSE 5001
 
 # 启动 Flask 应用
-CMD ["python", "app.py"]
+CMD ["python", "main.py"]
